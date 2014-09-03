@@ -156,18 +156,15 @@ $sleepTime = 10
 $wfaHost = "localhost"
 $url = "http://" + $wfaHost + "/rest/workflows"
 $cred = Get-WFACredentials -Host $wfaHost
-$workflowToExecute = "Create SnapMirror (Schwab)"
+$workflowToExecute = <workflow>
 Get-WFALogger -Info -Message $("Executing workflow $workflowToExecute via REST")
 
 # Build the URI to test if this workflow actually exists and to get the 'execute' href
-#$uuid = "3adb8f86-24b4-45a7-99ec-7c5279f8496f"
 $newUrl = $url + "?name=" + $([System.Web.HttpUtility]::UrlEncode($workflowToExecute))
-#$newUrl = $url + "/" +  $([System.Web.HttpUtility]::UrlPathEncode($uuid))
 Get-WFALogger -Info -Message $("URL: $newUrl")
 
 # Get the workflow information
 $workflow = $(Invoke-WFAGet -url $newUrl -cred $cred).collection.workflow
-#$workflow = $(Invoke-WFAGet -url $newUrl -cred $cred).workflow
 
 # Derive the href for "execute"
 $href = Get-WFALinks -linkList $($workflow.link) -linkToFind "execute"

@@ -1,6 +1,6 @@
 Function Get-WfaScript {
 	param(
-		[Parameter(Mandatory = $true)] $userInput,
+		[Parameter(Mandatory = $true)] $workflow,
 		[Parameter(Mandatory = $true)] $scriptFile
 	)
 	
@@ -8,6 +8,8 @@ Function Get-WfaScript {
 		Write-Warning "Script file $scriptFile already exists.  Deleting"
 		Remove-Item -Path $scriptFile -Force
 	}
+	
+	$userInput = $($workflow.userInputList.userInput)
 	
 	foreach ($line in $(Get-Content -Path ".\calltemplate.txt")) {
 		if($line -cmatch "^<param>$") {
@@ -18,6 +20,10 @@ Function Get-WfaScript {
 		if ($line -cmatch "^<xml>$") {
 			Publish-WfaXml -userInput $userInput -scriptFile $scriptFile
 			continue
+		}
+		
+		if ($line -match ".*=\s+<workflow>") {
+			$line = $line -replace "<workflow>", $("""$($workflow.name)""")
 		}
 
 		Out-File -FilePath $scriptFile -InputObject $line -Append
@@ -247,6 +253,4 @@ if($uuidOrName -match "name") {
 	$workflow = $(Invoke-WFAGet -url $newUrl -cred $cred).workflow
 }
 
-#$restXml = Publish-WfaXml -userInput $($workflow.userInputList.userInput)
-#$restParams = Publish-WfaParams -userInput $($workflow.userInputList.userInput)
-$script = Get-WfaScript -userInput $($workflow.userInputList.userInput) -scriptFile $scriptName
+$script = Get-WfaScript -workflow $workflow -scriptFile $scriptName
