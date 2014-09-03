@@ -210,6 +210,9 @@ Function Publish-WfaParams {
 	return 
 }
 
+Function Publish-WfaRestScript {
+}
+
 # Setup the core for the script.  Dont change the URL unless you are remotely executing
 # or have a non-default port.
 $junk = [System.Reflection.Assembly]::LoadWithPartialName("System.Web")
