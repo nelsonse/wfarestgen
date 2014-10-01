@@ -184,6 +184,8 @@ if($status -match "OK" -or $status -match "DONE") {
 		$step = $rawStatus.job.jobStatus."workflow-execution-progress"."current-command-index"
 		$ofStep = $rawStatus.job.jobStatus."workflow-execution-progress"."commands-number"
 		Get-WFALogger -Info -Message $("Workflow Execution Current Status: $status.  Executing command number $step of $ofStep")
+		$progress = [int] $(100 * ($step / $ofStep))
+		Set-WfaCommandProgress -Current $progress -ProgressPercentage 100
 		sleep $sleepTime
 	}
 	
@@ -194,14 +196,14 @@ if($status -match "OK" -or $status -match "DONE") {
 		}
 		"FAILED" {
 			Get-WFALogger -Error -Message $("Workflow $workflowToExecute failed.")
-			exit 1
+			Throw "Workflow FAILED"
 		}
 		"UNKNOWN" {
 			Get-WFALogger -Error -Message $("Indeterminate status.  Status returned was $status")
-			exit 2
+			Throw "Workflow has UNKNOWN status"
 		}
 	}
 } else {
 	WFA-Logger -Error -Message $("Workflow $workflowToExecute failed to start!  Status was: $status")
-	exit 3
+	Throw "Workflow did not start"
 }

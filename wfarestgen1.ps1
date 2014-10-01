@@ -221,6 +221,25 @@ Function Publish-WfaXml {
 	return
 }
 
+Function Get-WfaType {
+	param(
+		[Parameter(Mandatory = $true)] $wfaType
+	)
+	
+	switch ($wfaType) {
+		"Number" { 
+			$value = "long"
+			break
+		}
+		default {
+			$value = "string"
+			break
+		}
+	}
+	
+	return $value
+}
+
 Function Publish-WfaParams {
 	param(
 		[Parameter(Mandatory = $true)] $userInput,
@@ -228,12 +247,13 @@ Function Publish-WfaParams {
 	)
 	
 	$paramTempArray = @("param(")
-	$userInputTemplate = "`t[Parameter(Mandatory = $--mandatory--)] $--userInputName--"
+	$userInputTemplate = "`t[Parameter(Mandatory = $--mandatory--)] [--type--] $--userInputName--"
 	for ($x = 0; $x -lt $($userInput).count; $x++) { 
 		$inputTemplate = $userInputTemplate -replace "--userInputName--", $($userInput[$x]).name
 		$inputTemplate = $inputTemplate -replace "--mandatory--", $($userInput[$x]).mandatory
+		$inputTemplate = $inputTemplate -replace "--type--", $(Get-WfaType -wfaType $($userInput[$x]).type)
 		if($x -ne ($userInput.count - 1)) {
-			$paramTempArray += $($inputTemplate + ",`n")
+			$paramTempArray += $($inputTemplate + ",")
 		} else {
 			$paramTempArray += $inputTemplate
 		}
