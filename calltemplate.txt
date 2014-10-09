@@ -172,6 +172,11 @@ $href = Get-WFALinks -linkList $($workflow.link) -linkToFind "execute"
 # Invoke the PUT with the execute href and the XML
 $output = Invoke-WFAPut -url $href -cred $cred -xml $xmlOut
 sleep $sleepTime
+
+$jobID = $($output.job.jobId)
+$wfName = $($output.job.workflow.name)
+Get-WFALogger -Info -Message $("Executing workflow $wfname with job ID: $jobID")
+
 $status = Get-WFAJobStatus -status $($output.job.jobStatus.jobStatus)
 
 if($status -match "OK" -or $status -match "DONE") {
@@ -183,7 +188,9 @@ if($status -match "OK" -or $status -match "DONE") {
 		$status = Get-WFAJobStatus -status $($rawStatus.job.jobStatus.jobStatus)
 		$step = $rawStatus.job.jobStatus."workflow-execution-progress"."current-command-index"
 		$ofStep = $rawStatus.job.jobStatus."workflow-execution-progress"."commands-number"
+		$stepName = $rawStatus.job.jobStatus."workflow-execution-progress"."current-command"
 		Get-WFALogger -Info -Message $("Workflow Execution Current Status: $status.  Executing command number $step of $ofStep")
+		Get-WFALogger -Info -Message $("`t`tCurrent command name: $stepName")
 		$progress = [int] $(100 * ($step / $ofStep))
 		Set-WfaCommandProgress -Current $progress -ProgressPercentage 100
 		sleep $sleepTime
