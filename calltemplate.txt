@@ -191,7 +191,11 @@ if($status -match "OK" -or $status -match "DONE") {
 		$stepName = $rawStatus.job.jobStatus."workflow-execution-progress"."current-command"
 		Get-WFALogger -Info -Message $("Workflow Execution Current Status: $status.  Executing command number $step of $ofStep")
 		Get-WFALogger -Info -Message $("`t`tCurrent command name: $stepName")
-		$progress = [int] $(100 * ($step / $ofStep))
+		if($ofStep -gt 0) {
+			$progress = [int] $(100 * ($step / $ofStep))
+		} else {
+			$progress = 0;
+		}
 		Set-WfaCommandProgress -Current $progress -ProgressPercentage 100
 		sleep $sleepTime
 	}
