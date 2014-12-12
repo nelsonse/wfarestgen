@@ -200,6 +200,12 @@ Function Get-WFAJobStatus {
 	}
 }
 
+<#
+This function publishes the XML to be embedded within the resulting generated script
+The XML is formatted to the specification expected by WFA to return the parameters to the 
+workflow being called
+#>
+
 Function Publish-WfaXml {
 	param(
 		[Parameter(Mandatory = $true)] $userInput,
@@ -221,6 +227,7 @@ Function Publish-WfaXml {
 	return
 }
 
+<# Convert the WFA type to a PowerShell data type #>
 Function Get-WfaType {
 	param(
 		[Parameter(Mandatory = $true)] $wfaType
@@ -228,7 +235,11 @@ Function Get-WfaType {
 	
 	switch ($wfaType) {
 		"Number" { 
-			$value = "long"
+			$value = "int"
+			break
+		}
+		"Boolean" {
+			$value = "bool"
 			break
 		}
 		default {
@@ -240,6 +251,43 @@ Function Get-WfaType {
 	return $value
 }
 
+<# Set the appropriate validation based on the input of the workflow.
+The original workflow may require a range of values to be passed.  This
+portion of the script passes through this range and inserts it into the
+new REST script to be generated.  
+#>
+Function Get-WfaValidation {
+	param(
+		[Parameter(Mandatory = $true)] $wfaType,
+		[Parameter(Mandatory = $true)] $allowedValues
+	)
+	
+	switch($wfaType) {
+		"Number" {
+			$rangeArray = $allowedValues.value.Split("-")
+			$validate = "[ValidateRange($($rangeArray[0]),$($rangeArray[1]))]"
+			break
+		}
+		{$wfaType -match "Enum" -or $wfaType -match "Query"} {
+			$rangeArray = $allowedValues.value
+			$base = "[ValidateSet("
+			$end = ")]"
+			$middle = ""
+			foreach ($value in $rangeArray) {
+				$middle = $middle + """$value""" + ","
+			}
+			$middle = $middle -replace ",$",""
+			$validate = $base + $middle + $end
+			break
+		}
+	}
+	return $validate
+}
+
+<# Generate the parameters needed at the top of the script
+to allow input into the script
+#>
+
 Function Publish-WfaParams {
 	param(
 		[Parameter(Mandatory = $true)] $userInput,
@@ -247,11 +295,16 @@ Function Publish-WfaParams {
 	)
 	
 	$paramTempArray = @("param(")
-	$userInputTemplate = "`t[Parameter(Mandatory = $--mandatory--)] [--type--] $--userInputName--"
+	$userInputTemplate = "`t[Parameter(Mandatory = $--mandatory--)] --validate--[--type--] $--userInputName--"
 	for ($x = 0; $x -lt $($userInput).count; $x++) { 
 		$inputTemplate = $userInputTemplate -replace "--userInputName--", $($userInput[$x]).name
 		$inputTemplate = $inputTemplate -replace "--mandatory--", $($userInput[$x]).mandatory
 		$inputTemplate = $inputTemplate -replace "--type--", $(Get-WfaType -wfaType $($userInput[$x]).type)
+		if($($userInput[$x]).allowedValues -ne $null) {
+			$inputTemplate = $inputTemplate -replace "--validate--", $(Get-WfaValidation -wfaType $($userInput[$x]).type -allowedValues $($userInput[$x]).allowedValues)
+		} else {
+			$inputTemplate = $inputTemplate -replace "--validate--",""
+		}
 		if($x -ne ($userInput.count - 1)) {
 			$paramTempArray += $($inputTemplate + ",")
 		} else {
